@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+
+# http://www.drdobbs.com/testing/unit-testing-with-python/240165163
+
+import inspect
+import os
+import sys
+import unittest
+
+localmodule = os.path.realpath(
+    os.path.join(os.path.dirname(inspect.getfile(inspect.currentframe())), '..'))
+print('localmodule: ' + localmodule)
+if localmodule not in sys.path:
+    sys.path.insert(0, localmodule)
+
+import simsalapad
+
+
+class UtilsTest(unittest.TestCase):
+    '''simsalapad/utils.py'''
+
+    def setUp(self):
+        self.u = simsalapad.simsalapad.utils()
+
+    def test_splitBlocks(self):
+        split = self.u.splitBlocks(b'0000111122223333', 4)
+        self.assertTrue(split == [b'0000', b'1111', b'2222', b'3333'])
+        split = self.u.splitBlocks(b'0000011111', 5)
+        self.assertTrue(split == [b'00000', b'11111'])
+
+    def test_xorForNextPadding(self):
+        res = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 83]
+        self.u.xorForNextPadding(res, 1)
+        self.assertTrue(res == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80])
+        res = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0, 0]
+        self.u.xorForNextPadding(res, 5)
+        self.assertTrue(res == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 103, 3, 3, 3, 3])
+
+    def test_xor(self):
+        res = self.u.xor(b'0000', b'1111')
+        self.assertTrue(res == b'\x01\x01\x01\x01')
+        res = self.u.xor(b'RandomText', b'\x11\x01\r4567890')
+        self.assertTrue(res == b'C`cPZ[c]AD')
+
+    def test_xorxor(self):
+        res = self.u.xorxor(b'0000', b'1111', b'2222')
+        self.assertTrue(res == b'3333')
+        res = self.u.xorxor(b'Random', b'Random', b'Nulled')
+        self.assertTrue(res == b'Nulled')
+
+
+if __name__ == "__main__":
+    newSuite = unittest.TestSuite()
+    newSuite.addTest(unittest.makeSuite(UtilsTest))
+    unittest.main(failfast=False)

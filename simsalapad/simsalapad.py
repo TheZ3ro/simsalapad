@@ -27,8 +27,7 @@ SOFTWARE.
 import sys
 import base64
 import argparse
-import binascii
-from Utils import Utils
+from simsalapad.utils import utils
 from ntpath import basename
 from ast import literal_eval
 from os.path import dirname, abspath
@@ -36,7 +35,7 @@ from importlib import import_module
 
 __all__ = ["PaddingOracle", "IVRecover"]
 
-class IVRecover(Utils):
+class IVRecover(utils):
     _decrypter = None
     _regex = None
     _decrypter_module = None
@@ -53,9 +52,9 @@ class IVRecover(Utils):
                 if callable(decrypter):
                     self._decrypter = decrypter
                 else:
-                    raise("Decrypter must be a method")
+                    raise Exception("Decrypter must be a method")
             else:
-                raise("You must specify a decrypter method")
+                raise Exception("You must specify a decrypter method")
 
     def error(self, text):
         sys.stderr.write("[ERROR] {0}\n".format(text))
@@ -66,7 +65,7 @@ class IVRecover(Utils):
     def _load_decrypter(self, path):
         sys.path.append(dirname(abspath(path)))
         try:
-            self._decrypter_module= import_module(basename(path)[:-3])
+            self._decrypter_module = import_module(basename(path)[:-3])
             self._decrypter = self._decrypter_module.decrypt
         except ImportError:
             if not self._as_library:
@@ -92,14 +91,14 @@ class IVRecover(Utils):
             self.info("Found IV: {0}".format(IV))
 
 
-class PaddingOracle(Utils):
-    _plaintext = ""
+class PaddingOracle(utils):
+    _plaintext = b""
     _oracle = None
     _IV = None
     _oracle_module = None
     _path = None
     _as_library = False
-    _ciphertext = ""
+    _ciphertext = b""
     _intermediate_blocks = []
 
     def __init__(self, block_size=16, oracle_path=None, iv=None, oracle=None):
@@ -110,14 +109,16 @@ class PaddingOracle(Utils):
             if iv is not None and oracle is not None:
                 if type(iv) == list and len(iv) > 0:
                     self._IV = iv
+                elif type(iv) == bytes and len(iv) % self._block_size == 0:
+                    self._IV = list(iv)
                 else:
-                    raise("IV object must be a list of integer greater than 0")
+                    raise Exception("IV object must be a list of integers with len greater than 0, or a bytestring multiple of {} bytes".format(self._block_size))
                 if callable(oracle):
                     self._oracle = oracle
                 else:
-                    raise("Oracle object must be a method")
+                    raise Exception("Oracle object must be a method")
             else:
-                raise("You must specify an IV and an oracle method")
+                raise Exception("You must specify an IV and an oracle method")
 
     def error(self, text):
         sys.stderr.write("[ERROR] {0}\n".format(text))
@@ -126,16 +127,16 @@ class PaddingOracle(Utils):
         sys.stdout.write("[INFO] {0}\n".format(text))
 
     def _remove_padding(self, data):
-        if 0 < ord(data[-1]) <= 0x10:
-            if data[-ord(data[-1]):] != data[-1]*ord(data[-1]):
+        if 0 < int(data[-1]) <= 0x10:
+            if data[-int(data[-1]):] != bytes([data[-1]]) * int(data[-1]):
                 return False
-            return data[:-ord(data[-1])]
+            return data[:-int(data[-1])]
         return data
 
     def _load_oracle(self, path):
         sys.path.append(dirname(abspath(path)))
         try:
-            self._oracle_module= import_module(basename(path)[:-3])
+            self._oracle_module = import_module(basename(path)[:-3])
             if "oracle" in dir(self._oracle_module):
                 if callable(self._oracle_module.oracle):
                     self._oracle = self._oracle_module.oracle
@@ -146,9 +147,8 @@ class PaddingOracle(Utils):
                 self.error("Please define an oracle method!")
                 sys.exit(-1)
             if "IV" in dir(self._oracle_module):
-                if type(self._oracle_module.IV) == str:
-                    IV = map(ord, list(self._oracle_module.IV))
-                    self._IV = IV
+                if type(self._oracle_module.IV) == bytes:
+                    self._IV = list(self._oracle_module.IV)
                 else:
                     self._IV = self._oracle_module.IV
             else:
@@ -164,15 +164,15 @@ class PaddingOracle(Utils):
 
     def _crack_block(self, org_previous_block, next_block, oracle):
         dummy_block = list([0] * 16)
-        half_plain = ""
+        half_plain = b""
         intermediate = []
-        for reverse_position in range(1, len(next_block)+1):
+        for reverse_position in range(1, len(next_block) + 1):
             for byte_guess in range(0, 256):
                 dummy_block[-reverse_position] = byte_guess
-                tmp = "".join(chr(k) for k in dummy_block) + "".join(chr(k) for k in next_block)
+                tmp = bytes(dummy_block) + bytes(next_block)
                 if oracle(tmp):
                     intermediate = [byte_guess] + intermediate
-                    half_plain = chr(reverse_position ^ org_previous_block[-reverse_position] ^ byte_guess) + half_plain
+                    half_plain = bytes([reverse_position ^ org_previous_block[-reverse_position] ^ byte_guess]) + half_plain
                     self.xorForNextPadding(dummy_block, reverse_position)
                     break
         return half_plain, self.block2Hex(dummy_block)
@@ -192,9 +192,9 @@ class PaddingOracle(Utils):
         else:
             self._as_library = True
         blocks = self.splitBlocks(self._ciphertext, self._block_size)
-        self._org_cipher = [self._IV] + [map(ord, list(b)) for b in blocks]
-        for i in xrange(0,len(self._org_cipher)-1):
-            plain, intermediate = self._crack_block(list(self._org_cipher[i]), list(self._org_cipher[i+1]), self._oracle)
+        self._org_cipher = [self._IV] + blocks
+        for i in range(0, len(self._org_cipher) - 1):
+            plain, intermediate = self._crack_block(list(self._org_cipher[i]), list(self._org_cipher[i + 1]), self._oracle)
             self._plaintext += plain
             self._intermediate_blocks.append(intermediate)
         if self._as_library:
@@ -220,7 +220,7 @@ def main():
     parser.add_argument("-bs", metavar="BLOCK SIZE", help="Set the size for each block", type=int, dest="block_size",
                         required=False)
     parser.add_argument("-b", action="store_true", help="Base64 decode the ciphertext before start", default=False,
-                      dest="base64", required=False)
+                        dest="base64", required=False)
     parser.add_argument("-e", metavar="PLAINTEXT", help="Encrypt a custom message", type=str, required=False,
                         dest="encrypt")
     args = parser.parse_args()

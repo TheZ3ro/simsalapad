@@ -26,14 +26,20 @@ SOFTWARE.
 """
 import binascii
 
-class Utils(object):
+class utils(object):
 
     def splitBlocks(self, ciphertext, block_size):
-        return [ciphertext[i:i+block_size] for i in range(0, len(ciphertext), block_size)]
+        return [ciphertext[i:i + block_size] for i in range(0, len(ciphertext), block_size)]
 
     def xorForNextPadding(self, block, current_padding_position):
-        for pad_reverse_position in range(1, current_padding_position+1):
-            block[-pad_reverse_position] ^= current_padding_position ^ current_padding_position+1
+        for pad_reverse_position in range(1, current_padding_position + 1):
+            block[-pad_reverse_position] ^= current_padding_position ^ current_padding_position + 1
+
+    def xor(self, string_a, string_b):
+        return bytes([a ^ b for a, b in zip(string_a, string_b)])
+
+    def xorxor(self, string_a, string_b, string_c):
+        return bytes([a ^ b ^ c for a, b, c in zip(string_a, string_b, string_c)])
 
     def strXor(self, string_a, string_b):
         tmp = ""
@@ -49,18 +55,8 @@ class Utils(object):
 
     def block2Hex(self, block):
         if type(block) == list and type(block[0]) == int:
-            return binascii.hexlify("".join(chr(x) for x in block)).upper()
-        elif type(block) == str:
+            return binascii.hexlify(bytes(block)).upper()
+        elif type(block) == bytes:
             return binascii.hexlify(block).upper()
-        elif type(block) == list and type(block[0][0]) == str:
+        elif type(block) == list and type(block[0][0]) == bytes:
             return binascii.hexlify(block[0][0]).upper()
-
-    def unHex(self, block):
-        return [binascii.unhexlify(block[0])]
-
-    def unHexOrd(self, block):
-        return map(ord, list(binascii.unhexlify(block)))
-
-    def hex2Block(self, hex):
-        block = binascii.unhexlify(hex)
-        return map(ord, list(block))

@@ -25,5 +25,5 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from simsalapad import PaddingOracle
-from simsalapad import IVRecover
+from simsalapad.simsalapad import PaddingOracle
+from simsalapad.simsalapad import IVRecover
