@@ -41,18 +41,6 @@ class utils(object):
     def xorxor(self, string_a, string_b, string_c):
         return bytes([a ^ b ^ c for a, b, c in zip(string_a, string_b, string_c)])
 
-    def strXor(self, string_a, string_b):
-        tmp = ""
-        for i in range(0, len(string_a)):
-            tmp += chr(ord(string_a[i]) ^ ord(string_b[i]))
-        return tmp
-
-    def strStrXor(self, string_a, string_b, string_c):
-        tmp = ""
-        for i in range(0, len(string_a)):
-            tmp += chr(ord(string_a[i]) ^ ord(string_b[i]) ^ ord(string_c[i]))
-        return tmp
-
     def block2Hex(self, block):
         if type(block) == list and type(block[0]) == int:
             return binascii.hexlify(bytes(block)).upper()

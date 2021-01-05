@@ -24,29 +24,37 @@ class UtilsTest(unittest.TestCase):
 
     def test_splitBlocks(self):
         split = self.u.splitBlocks(b'0000111122223333', 4)
-        self.assertTrue(split == [b'0000', b'1111', b'2222', b'3333'])
+        self.assertEqual(split, [b'0000', b'1111', b'2222', b'3333'])
         split = self.u.splitBlocks(b'0000011111', 5)
-        self.assertTrue(split == [b'00000', b'11111'])
+        self.assertEqual(split, [b'00000', b'11111'])
 
     def test_xorForNextPadding(self):
         res = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 83]
         self.u.xorForNextPadding(res, 1)
-        self.assertTrue(res == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80])
+        self.assertEqual(res, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80])
         res = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0, 0]
         self.u.xorForNextPadding(res, 5)
-        self.assertTrue(res == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 103, 3, 3, 3, 3])
+        self.assertEqual(res, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 103, 3, 3, 3, 3])
 
     def test_xor(self):
         res = self.u.xor(b'0000', b'1111')
-        self.assertTrue(res == b'\x01\x01\x01\x01')
+        self.assertEqual(res, b'\x01\x01\x01\x01')
         res = self.u.xor(b'RandomText', b'\x11\x01\r4567890')
-        self.assertTrue(res == b'C`cPZ[c]AD')
+        self.assertEqual(res, b'C`cPZ[c]AD')
 
     def test_xorxor(self):
         res = self.u.xorxor(b'0000', b'1111', b'2222')
-        self.assertTrue(res == b'3333')
+        self.assertEqual(res, b'3333')
         res = self.u.xorxor(b'Random', b'Random', b'Nulled')
-        self.assertTrue(res == b'Nulled')
+        self.assertEqual(res, b'Nulled')
+
+    def test_block2Hex(self):
+        res = self.u.block2Hex([0, 0, 0, 0])
+        self.assertEqual(res, b'00000000')
+        res = self.u.block2Hex(b'\x01\x01\x01\x01\x01')
+        self.assertEqual(res, b'0101010101')
+        res = self.u.block2Hex([[b'\x02\x02']])
+        self.assertEqual(res, b'0202')
 
 
 if __name__ == "__main__":

@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+
+# http://www.drdobbs.com/testing/unit-testing-with-python/240165163
+
+import inspect
+import os
+import sys
+import unittest
+from binascii import unhexlify
+
+localmodule = os.path.realpath(
+    os.path.join(os.path.dirname(inspect.getfile(inspect.currentframe())), '..'))
+print('localmodule: ' + localmodule)
+if localmodule not in sys.path:
+    sys.path.insert(0, localmodule)
+
+import simsalapad
+
+# =========================================================
+from Crypto.Cipher import AES
+key = "aaaaaaaaaaaaaaaa"
+iv = "1111111111111111"
+
+def decr(ciphertext):
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+    return cipher.decrypt(ciphertext)
+
+def ispkcs7(plaintext):
+    l = len(plaintext)
+    c = int(plaintext[l - 1])
+    if (c > 16) or (c < 1):
+        raise Exception('PaddingException')
+    if plaintext[l - c:] != bytes([c]) * c:
+        raise Exception('PaddingException')
+    return plaintext
+
+def oracle(text):
+    try:
+        ispkcs7(decr(text))
+    except Exception as e:
+        if 'PaddingException' in str(e):
+            return False
+    return True
+# =========================================================
+
+
+class PaddingOracleTest(unittest.TestCase):
+    '''simsalapad/simsalapad.py'''
+
+    def test_attackPaddingOracle(self):
+        p = simsalapad.PaddingOracle(iv=b'1111111111111111', oracle=oracle)
+        p.initWithCiphertext(unhexlify("bdf784e982b35815d47ba17d24c0fbfd40a557989905ed4e1a86cd3919cf9b22"))
+        res = p.attack()
+        self.assertEqual(res, b'Test PaddingOracle')
+
+
+class IVRecoverTest(unittest.TestCase):
+    '''simsalapad/simsalapad.py'''
+
+    def test_attackIVRecover(self):
+        p = simsalapad.IVRecover(decrypter=decr)
+        res = p.attack()
+        self.assertEqual(res, b'1111111111111111')
+
+
+if __name__ == "__main__":
+    newSuite = unittest.TestSuite()
+    newSuite.addTest(unittest.makeSuite(PaddingOracleTest))
+    newSuite.addTest(unittest.makeSuite(IVRecoverTest))
+    unittest.main(failfast=False)

@@ -84,7 +84,7 @@ class IVRecover(utils):
         to_crypt = "\x00" * (self._block_size * 2)
         result = self._decrypter(to_crypt)
         blocks = self.splitBlocks(result, self._block_size)
-        IV = self.strStrXor(blocks[0], blocks[1], "\x00" * self._block_size)
+        IV = self.xorxor(blocks[0], blocks[1], b"\x00" * self._block_size)
         if self._as_library:
             return IV
         else:

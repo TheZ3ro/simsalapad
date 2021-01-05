@@ -1,0 +1,8 @@
+#!/bin/bash
+set -e # quit script on error
+
+WORKDIR=`dirname "$0"`
+
+for testcase in $WORKDIR/*.TestCase; do
+    python3 $testcase
+done
