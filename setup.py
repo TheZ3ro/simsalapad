@@ -26,24 +26,45 @@ SOFTWARE.
 """
 
 from setuptools import setup
+from os import path
+from simsalapad import VERSION
+
+this_directory = path.abspath(path.dirname(__file__))
+with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
 
 setup(
     name="simsalapad",
-    author=["Daniele Lingualossa","The Zero"],
-    version="0.0.1",
-    author_email=["d.linguaglossa@mseclab.it","io@thezero.org"],
+    author="Daniele Lingualossa, TheZero",
+    version=VERSION,
+    author_email="d.linguaglossa@mseclab.it, io@thezero.org",
     description="Padding oracle attack made easy",
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     license="MIT",
     keywords="",
-    url="https://github.com/dzonerzy/simsalapad",
+    url="https://github.com/TheZ3ro/simsalapad",
     packages=["simsalapad"],
     entry_points={
-            'console_scripts': [
-                'simsalapad=simsalapad.simsalapad:main',
-            ],
+        'console_scripts': [
+            'simsalapad=simsalapad.simsalapad:main',
+        ],
     },
     classifiers=[
-            "Development Status :: 0.0.1",
-            "Topic :: Security"
+        'Environment :: Console',
+        'Intended Audience :: Developers',
+        'Intended Audience :: System Administrators',
+        'License :: OSI Approved :: MIT License',
+        'Natural Language :: English',
+        'Operating System :: MacOS',
+        'Operating System :: Microsoft :: Windows',
+        'Operating System :: POSIX',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Topic :: Security'
     ],
 )

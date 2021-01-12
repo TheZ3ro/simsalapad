@@ -27,3 +27,5 @@ SOFTWARE.
 
 from simsalapad.simsalapad import PaddingOracle
 from simsalapad.simsalapad import IVRecover
+
+VERSION = "0.1.1"

@@ -21,9 +21,11 @@ from Crypto.Cipher import AES
 key = "aaaaaaaaaaaaaaaa"
 iv = "1111111111111111"
 
+
 def decr(ciphertext):
     cipher = AES.new(key, AES.MODE_CBC, iv)
     return cipher.decrypt(ciphertext)
+
 
 def ispkcs7(plaintext):
     l = len(plaintext)
@@ -33,6 +35,7 @@ def ispkcs7(plaintext):
     if plaintext[l - c:] != bytes([c]) * c:
         raise Exception('PaddingException')
     return plaintext
+
 
 def oracle(text):
     try:

@@ -25,13 +25,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 import sys
-import base64
-import argparse
-from simsalapad.utils import utils
-from ntpath import basename
-from ast import literal_eval
-from os.path import dirname, abspath
+
+from pathlib import Path
 from importlib import import_module
+
+from simsalapad.utils import utils
 
 __all__ = ["PaddingOracle", "IVRecover"]
 
@@ -63,9 +61,10 @@ class IVRecover(utils):
         sys.stdout.write("[INFO] {0}\n".format(text))
 
     def _load_decrypter(self, path):
-        sys.path.append(dirname(abspath(path)))
+        path = Path(path).resolve()
+        sys.path.append(str(path.parent))
         try:
-            self._decrypter_module = import_module(basename(path)[:-3])
+            self._decrypter_module = import_module(path.name[:-3])
             self._decrypter = self._decrypter_module.decrypt
         except ImportError:
             if not self._as_library:
@@ -134,9 +133,10 @@ class PaddingOracle(utils):
         return data
 
     def _load_oracle(self, path):
-        sys.path.append(dirname(abspath(path)))
+        path = Path(path).resolve()
+        sys.path.append(str(path.parent))
         try:
-            self._oracle_module = import_module(basename(path)[:-3])
+            self._oracle_module = import_module(path.name[:-3])
             if "oracle" in dir(self._oracle_module):
                 if callable(self._oracle_module.oracle):
                     self._oracle = self._oracle_module.oracle
@@ -205,58 +205,3 @@ class PaddingOracle(utils):
             for i in range(0, len(self._intermediate_blocks)):
                 self.info("Intermediate block-{0}: {1}".format(i, self._intermediate_blocks[i]))
             self.info("Plaintext recovered: {0}".format(self._remove_padding(self._plaintext)))
-
-def main():
-    parser = argparse.ArgumentParser(description="Padding Oracle attack & IV recover tool")
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('--padding', action='store_true', help='Do a padding oracle attack', default=False,
-                       dest="padding")
-    group.add_argument('--iv-recover', action='store_true', help='Try to find a valid IV for decryption routine',
-                       default=False, dest="ivfinder")
-    parser.add_argument("-p", metavar="PATH", help="Path to the oracle (python file)", type=str, required=False,
-                        dest="path")
-    parser.add_argument("-c", metavar="CIPHERTEXT", help="Ciphertext that should be cracked", type=str, required=False,
-                        dest="ciphertext")
-    parser.add_argument("-bs", metavar="BLOCK SIZE", help="Set the size for each block", type=int, dest="block_size",
-                        required=False)
-    parser.add_argument("-b", action="store_true", help="Base64 decode the ciphertext before start", default=False,
-                        dest="base64", required=False)
-    parser.add_argument("-e", metavar="PLAINTEXT", help="Encrypt a custom message", type=str, required=False,
-                        dest="encrypt")
-    args = parser.parse_args()
-    if args.path:
-        try:
-            if args.padding:
-                if args.block_size:
-                    padding_oracle = PaddingOracle(block_size=args.block_size, oracle_path=args.path)
-                else:
-                    padding_oracle = PaddingOracle(oracle_path=args.path)
-                padding_oracle.info("Starting bruteforce...")
-                if args.ciphertext:
-                    if args.base64:
-                        try:
-                            args.ciphertext = base64.b64decode(args.ciphertext)
-                        except TypeError:
-                            padding_oracle.error("Please insert a valid base64")
-                            sys.exit(-1)
-                    else:
-                        args.ciphertext = literal_eval(args.ciphertext)
-                    padding_oracle.initWithCiphertext(args.ciphertext)
-                else:
-                    parser.error("You must use -c switch while checking for padding oracle!")
-                padding_oracle.attack()
-            else:
-                if args.block_size:
-                    iv_recover = IVRecover(block_size=args.block_size, decrypter_path=args.path)
-                else:
-                    iv_recover = IVRecover(decrypter_path=args.path)
-                iv_recover.attack()
-        except Exception as e:
-            if args.padding:
-                padding_oracle.error("Something goes wrong => {0}".format(e))
-            else:
-                iv_recover.error("Something goes wrong => {0}".format(e))
-    else:
-        parser.error("You must use -p switch while checking for padding oracle or iv-recover!")
-if __name__ == "__main__":
-    main()
